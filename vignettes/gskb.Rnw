@@ -1,0 +1,264 @@
+%\VignetteIndexEntry{gskb: mouse data}
+%\VignetteKeywords{ExperimentData, Mus_musculus}
+%\VignettePackage{gskb}
+\documentclass[12pt]{article}
+
+
+<<style-Sweave, eval=TRUE, echo=FALSE, results=tex>>=
+BiocStyle::latex()
+@
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+
+\author{Valerie Bares and Xijin Ge}
+
+\title{Gene Set Data for Pathway Analysis in Mouse}
+
+\maketitle
+
+\begin{center}
+Department of Mathematics and Statistics, South Dakota State University
+\end{center}
+
+
+<<echo=FALSE, eval=TRUE>>=
+options(width=80)
+@
+
+
+
+\section{Data Introduction}
+
+\noindent Gene Set Knowledgebase (GSKB) is a comprehensive knowledgebase
+for pathway analysis in mouse. GSKB is similar to MSigDB (molecular signature 
+database), developed at Broad Institute 
+(\url{http://www.broadinstitute.org/gsea/msigdb}). GSKB is intended for mouse, 
+while MSigDB is for human. GSKB is created to support pathway analysis using 
+software like Gene Set Enrichment Analysis (GSEA), etc. 
+
+\noindent The GSKB contains various gene sets, corresponding to pathways and 
+functional categories. There are seven different types of gene sets:
+
+\begin{itemize}
+\item mm\_GO: gene sets from Gene Ontology for mouse (Mus musculus)
+\item mm\_location: Gene sets based on chromosomal location
+\item mm\_metabolic: metabolic pathways
+\item mm\_miRNA: Target genes of microRNAs, predicted or experimentally verified
+\item mm\_pathway: Currated pathways
+\item mm\_TF: Transcription factor target genes.
+\item mm\_other
+\end{itemize}
+
+\noindent In addition, we also compiled a large collection of gene lists 
+representing differentially expressed genes manually collected from literature.
+This dataset is too big and is only available on our web site. At the end of 
+this vignette, we show how these gene sets can be used.
+
+
+
+\section{Data Description}
+
+\noindent Interpretation of high-throughput 
+genomics data based on biological pathways constitutes a constant 
+challenge, partly because of the lack of supporting pathway database. 
+We created a functional genomics knowledgebase in mouse, which includes
+33,261 pathways and gene sets compiled from 40 sources such as Gene 
+Ontology, KEGG, GeneSetDB, PANTHER, microRNA and transcription factor 
+target genes, etc. Detailed information on these 40 sources and the
+citations is available
+\url{http://bioinformatics.sdstate.edu/gskb/db/Table%201-sources.pdf}. 
+
+\noindent	In addition, we also manually collected and curated
+8,747 lists of differentially expressed genes from 2,526 published gene
+expression studies to enable the detection of similarity to previously
+reported gene expression signatures. These two types of data constitute
+a comprehensive Gene Set Knowledgebase (GSKB), which can be readily 
+used by various pathway analysis software such as gene set enrichment
+analysis (GSEA).
+        
+\noindent More information about this data is available here
+\url{http://bioinformatics.sdstate.edu/gskb/}. A paper 
+describing these data are currently in revision by Database: The 
+Journal of Biological Databases and Curation.
+
+
+
+\section{Loading the data}
+
+\noindent The datasets can be loaded using the \Rfunction{data} function. 
+Here we load the specific types of gene sets, microRNA target genes. We also 
+show a portion of the first gene set. Users can change "mm\_miRNA" to any of 
+the 7 categories such as "mm\_pathway" to load other types of gene sets. 
+
+<<>>==
+library(gskb)
+
+data(mm_miRNA)
+mm_miRNA[[1]][1:10]
+@
+
+
+
+\section{Using the Data}
+
+\noindent The following examples use the knowledge base gene sets to run 
+pathway analysis on a microarray gene expression data obtained from Gene 
+Expression Ominibus(GSE40261). In this experiment, microRNA-29b was blocked by 
+antisense oligonecleotides. We will first use the PAGE: Parametric Analysis of 
+Gene Set Enrichment method (\url{http://www.biomedcentral.com/1471-2105/6/144}),
+as implemented in the PGSEA bioconductor package. Then we will use GSEA to 
+analyze it. 
+
+
+\subsection{Pathway analysis using PGSEA}
+
+\noindent This example is using PGSEA with the microRNA gene sets.
+
+<<results=hide,fig=true>>=
+source("http://bioconductor.org/biocLite.R")
+biocLite("PGSEA")
+library(PGSEA)
+
+library(gskb)
+
+data(mm_miRNA)
+
+gse<-read.csv("http://bioinformatics.sdstate.edu/gskb/db/GSE40261.csv",header=TRUE, row.name=1)
+
+# Gene are centered by mean expression
+gse <- gse - apply(gse,1,mean)  
+
+pg <- PGSEA(gse, cl=mm_miRNA, range=c(15,2000), p.value=NA)
+
+# Remove pathways that has all NAs. This could be due to that pathway has 
+# too few matching genes. 
+pg2 <- pg[rowSums(is.na(pg))!= dim(gse)[2], ]
+
+# Difference in Average Z score in two groups of samples is calculated and 
+# the pathways are ranked by absolute value.
+diff <- abs( apply(pg2[,1:4],1,mean) - apply(pg2[,5:8], 1, mean) )
+pg2 <- pg2[order(-diff), ]  
+
+sub <- factor( c( rep("Control",4),rep("Anti-miR-29",4) ) ) 
+smcPlot(pg2[1:15,],sub,scale=c(-12,12),show.grid=TRUE,margins=c(1,1,7,19),col=.rwb)
+@
+
+\noindent This figure shows the top 15 pathways. As expected, miRNA-29 related 
+gene sets are identified as differentially regulated pathway.
+
+
+\subsection{GSEA}
+
+\noindent This example is using GSEA with the miRNA gene set. Gene expression 
+data is reformated to a GCT format. And also a phenotype vector file is created
+in the CLS format. See GSEA help file for more information on these files. 
+\url{http://www.broadinstitute.org/gsea/}. These files are read from our web 
+site. R program for GSEA is also downloaded and saved on our web site.  
+
+<<eval=false>>=
+library(gskb)                                                         
+data(mm_miRNA)                                                           
+
+## GSEA 1.0 -- Gene Set Enrichment Analysis / Broad Institute         
+
+GSEA.prog.loc<- "http://bioinformatics.sdstate.edu/gskb/db/GSEA.1.0.R"
+source(GSEA.prog.loc, max.deparse.length=9999)                        
+
+GSEA(                                                                 
+    # Input/Output Files :------------------------------------------------
+    
+    # Input gene expression Affy dataset file in RES or GCT format        
+    input.ds = "http://bioinformatics.sdstate.edu/gskb/db/mouse_data.gct", 
+    
+    # Input class vector (phenotype) file in CLS format                   
+    input.cls = "http://bioinformatics.sdstate.edu/gskb/db/mouse.cls",
+    
+    # Gene set database in GMT format                                     
+    gs.db = mm_miRNA,                                                   
+    
+    # Directory where to store output and results (default: "")           
+    output.directory = getwd(),                                      
+    
+    #  Program parameters :-----------------------------------------------
+    doc.string = "mouse",                                    
+    non.interactive.run = T,                                         
+    reshuffling.type = "sample.labels",                              
+    nperm = 1000,                                                    
+    weighted.score.type =  1,                                                    
+    nom.p.val.threshold = -1,                                                    
+    fwer.p.val.threshold = -1,                                                   
+    fdr.q.val.threshold = 0.25,                                                
+    topgs = 10,                                                      
+    adjust.FDR.q.val = F,                                                   
+    gs.size.threshold.min = 15,                                                
+    gs.size.threshold.max = 500,                                                
+    reverse.sign = F,                                                 
+    preproc.type = 0,                                                 
+    random.seed = 3338,                                              
+    perm.type = 0,                                                   
+    fraction = 1.0,                                                  
+    replace = F,                                                     
+    save.intermediate.results = F,                                             
+    OLD.GSEA = F,                                                    
+    use.fast.enrichment.routine = T                                           
+)                                                                     
+@
+
+\noindent This will produce many output files in the current folder and the user 
+can examine these figures and tables.
+
+
+\subsection{Additional Data}
+
+\noindent In addition to the 7 types of gene sets listed above, we also compiled
+a large collection of gene lists representing differentially expressed genes 
+manually collected from literature. This dataset is too big and is only 
+available on our web site.  
+\url{http://bioinformatics.sdstate.edu/gskb/db/2-MousePath/MousePath_Co-expression_gmt.gmt}  
+Users can read these files directly from our website and use it in pathway 
+analysis. 
+
+<<results=hide,fig=true>>=
+library(PGSEA)
+
+library(gskb)
+
+d1 <- scan("http://bioinformatics.sdstate.edu/gskb/db/2-MousePath/MousePath_Co-expression_gmt.gmt", what="", sep="\n", skip=1)
+mm_Co_expression <- strsplit(d1, "\t")
+names(mm_Co_expression) <- sapply(mm_Co_expression, '[[', 1)
+
+pg <- PGSEA(gse, cl=mm_Co_expression, range=c(15,2000), p.value=NA)
+
+# Remove pathways that has all NAs. This could be due to that pathway has
+# too few matching genes. 
+pg2 <- pg[rowSums(is.na(pg))!= dim(gse)[2], ]
+
+# Difference in Average Z score in two groups of samples is calculated and 
+# the pathways are ranked by absolute value.
+diff <- abs( apply(pg2[,1:4],1,mean) - apply(pg2[,5:8], 1, mean) )
+pg2 <- pg2[order(-diff), ]  
+
+sub <- factor( c( rep("Control",4),rep("Anti-miR-29",4) ) ) 
+
+smcPlot(pg2[1:15,],sub,scale=c(-12,12),show.grid=TRUE,margins=c(1,1,7,19),col=.rwb)
+@
+
+
+\pagebreak
+
+\section{Session Info}
+
+\noindent The version number of R and packages loaded for generating the vignette were:
+
+<<>>=
+sessionInfo()
+@
+
+
+\end{document}
+
+
+
+
