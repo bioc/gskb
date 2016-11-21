@@ -68,7 +68,7 @@ We created a functional genomics knowledgebase in mouse, which includes
 Ontology, KEGG, GeneSetDB, PANTHER, microRNA and transcription factor 
 target genes, etc. Detailed information on these 40 sources and the
 citations is available
-\url{http://bioinformatics.sdstate.edu/gskb/db/Table%201-sources.pdf}. 
+\url{http://ge-lab.org/gskb/Table%201-sources.pdf}. 
 
 \noindent	In addition, we also manually collected and curated
 8,747 lists of differentially expressed genes from 2,526 published gene
@@ -79,7 +79,7 @@ used by various pathway analysis software such as gene set enrichment
 analysis (GSEA).
         
 \noindent More information about this data is available here
-\url{http://bioinformatics.sdstate.edu/gskb/}. A paper 
+\url{http://ge-lab.org/gskb/}. A paper 
 describing these data are currently in revision by Database: The 
 Journal of Biological Databases and Curation.
 
@@ -116,16 +116,18 @@ analyze it.
 
 \noindent This example is using PGSEA with the microRNA gene sets.
 
-<<results=hide,fig=true>>=
+<<eval=FALSE>>=
 source("http://bioconductor.org/biocLite.R")
 biocLite("PGSEA")
+@ 
+<<results=hide,fig=true>>=
 library(PGSEA)
 
 library(gskb)
 
 data(mm_miRNA)
 
-gse<-read.csv("http://bioinformatics.sdstate.edu/gskb/db/GSE40261.csv",header=TRUE, row.name=1)
+gse<-read.csv("http://ge-lab.org/gskb/GSE40261.csv",header=TRUE, row.name=1)
 
 # Gene are centered by mean expression
 gse <- gse - apply(gse,1,mean)  
@@ -163,17 +165,17 @@ data(mm_miRNA)
 
 ## GSEA 1.0 -- Gene Set Enrichment Analysis / Broad Institute         
 
-GSEA.prog.loc<- "http://bioinformatics.sdstate.edu/gskb/db/GSEA.1.0.R"
+GSEA.prog.loc<- "http://ge-lab.org/gskb/GSEA.1.0.R"
 source(GSEA.prog.loc, max.deparse.length=9999)                        
 
 GSEA(                                                                 
     # Input/Output Files :------------------------------------------------
     
     # Input gene expression Affy dataset file in RES or GCT format        
-    input.ds = "http://bioinformatics.sdstate.edu/gskb/db/mouse_data.gct", 
+    input.ds = "http://ge-lab.org/gskb/mouse_data.gct", 
     
     # Input class vector (phenotype) file in CLS format                   
-    input.cls = "http://bioinformatics.sdstate.edu/gskb/db/mouse.cls",
+    input.cls = "http://ge-lab.org/gskb/mouse.cls",
     
     # Gene set database in GMT format                                     
     gs.db = mm_miRNA,                                                   
@@ -216,7 +218,7 @@ can examine these figures and tables.
 a large collection of gene lists representing differentially expressed genes 
 manually collected from literature. This dataset is too big and is only 
 available on our web site.  
-\url{http://bioinformatics.sdstate.edu/gskb/db/2-MousePath/MousePath_Co-expression_gmt.gmt}  
+\url{http://ge-lab.org/gskb/2-MousePath/MousePath_Co-expression_gmt.gmt}  
 Users can read these files directly from our website and use it in pathway 
 analysis. 
 
@@ -225,7 +227,7 @@ library(PGSEA)
 
 library(gskb)
 
-d1 <- scan("http://bioinformatics.sdstate.edu/gskb/db/2-MousePath/MousePath_Co-expression_gmt.gmt", what="", sep="\n", skip=1)
+d1 <- scan("http://ge-lab.org/gskb/2-MousePath/MousePath_Co-expression_gmt.gmt", what="", sep="\n", skip=1)
 mm_Co_expression <- strsplit(d1, "\t")
 names(mm_Co_expression) <- sapply(mm_Co_expression, '[[', 1)
 
