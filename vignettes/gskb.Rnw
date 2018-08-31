@@ -117,8 +117,9 @@ analyze it.
 \noindent This example is using PGSEA with the microRNA gene sets.
 
 <<eval=FALSE>>=
-source("http://bioconductor.org/biocLite.R")
-biocLite("PGSEA")
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install("PGSEA")
 @ 
 <<results=hide,fig=true>>=
 library(PGSEA)
